@@ -1,0 +1,2 @@
+nC18_PBE_UFF_2_diff_basis_low.com
+nC18_PBE_UFF_2_diff_basis_high.com

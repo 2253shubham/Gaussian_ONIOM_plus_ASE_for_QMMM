@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+#######################################################################
+clean_up_last_run() {
+    local _i
+    if [ -e 'neb1.traj' ]; then
+        _i=$(get_next_backup)
+        mkdir RUN$_i
+        mv neb.{out,res} RUN$_i/
+        cp -a neb*.traj RUN$_i/
+    fi
+}
+
+get_next_backup() {
+    local _i=1
+    while [ -e RUN$_i ]; do
+        ((_i++))
+    done
+    echo $_i
+}
+
+run_neb() {
+    SPECS='specs.txt'
+
+    nimages="$(\grep NIMAGES $SPECS | cut -d= -f 2)"
+    if [ -z "$nimages" ]; then
+        nimages="$(\grep TITL neb.res | wc -l)"
+        ((nimages = nimages - 2))
+    fi
+
+    mpi="$(\grep MPI $SPECS | cut -d= -f 2)"
+    if [ -z "$mpi" ]; then
+        mpi="$nimages"
+    fi
+    ((mpipernode = (mpi + nnodeperjob - 1) / nnodeperjob))
+    ((nprocperimage = nprocperjob / mpi))
+
+    nguide="$(\ls neb*.traj 2>/dev/null | wc -w)"
+    suffix='.traj@-1'
+
+    if [ "$nguide" -eq 0 ]; then
+        nguide="$(\ls neb*.pdb 2>/dev/null | wc -w)"
+        suffix='.pdb'
+    fi
+
+    #charge="$(\grep CHARGE $SPECS | cut -d= -f 2)"
+    #[ -z "$charge" ] && charge=0
+
+    #multiplicity="$(\grep MULTIPLICITY $SPECS | cut -d= -f 2)"
+    #[ -z "$multiplicity" ] && multiplicity=1
+
+    memory=$(scontrol show job $SLURM_JOBID | grep 'mem' | awk '{print $1}' | cut -d'=' -f4 | cut -d',' -f1 | sed 's/M//')
+    ((memperimage = memory / nimages))
+
+    REF_FILES='../parameters/ref_files.txt'
+    file1=$(head -n 1 $REF_FILES)
+    file2=$(head -n 2 $REF_FILES | tail -n 1)
+
+    $MPIRUN $mpi -c $nprocperimage ./find_ts.py -rs react.pdb -ps prod.pdb -ni $nimages -ngc $nguide -ngp neb -ngs "$suffix" -ppi $nprocperimage -reff1 $file1 -reff2 $file2 -mem $memperimage -nproc $nprocperimage ${tmp_options}
+}
+#######################################################################
+clean_up_last_run
+
+run_neb
+
+echo "All done in sub-neb.script"

@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=48
+#SBATCH --cpus-per-task=1
+##SBATCH --mem=0
+#SBATCH --time=48:00:00
+#SBATCH --job-name=name
+#SBATCH --output stdout.%j
+#SBATCH --error stderr.%j
+#SBATCH --partition=standard
+
+#######################################################################
+module rm anaconda gaussian
+module add anaconda/2021.05-py38
+
+export g16root='/home/x-smalviya/gaussian/g16.c01.zen2'
+export GAUSS_MEMDEF=100000000
+#export GAUSS_EXEDIR="$g16root/bsd:$g16root/local:$g16root/extras:$g16root"
+export GAUSS_EXEDIR="$g16root/bsd:$g16root"
+export PERLLIB="$g16root/bsd"
+export _DSM_BARRIER=SHM
+export _RLD_ARGS='-log /dev/null'
+export GDVBASIS="$g16root/basis"
+#export GAUSS_LEXEDIR="$g16root/linda-exe"
+export GAUSS_LFLAGS='-workerwait 900 -opt "Tsnet.Node.lindarsharg: ssh "'
+#export PATH="${PATH:+$PATH:}$g16root/bsd:$g16root:$g16root/bin:$GV_DIR/bin"
+export PATH="${PATH:+$PATH:}$g16root/bsd:$g16root:$g16root/bin"
+#export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$g16root/bsd:$g16root/local:$g16root/extras:$g16root:$GV_DIR/lib:$GV_DIR/lib/MesaGL"
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$g16root/bsd"
+export MANPATH="${MANPATH:+$MANPATH:}$g16root/bsd"
+#export LIBPATH="${LIBPATH:+$LIBPATH:}$GV_DIR/lib"
+
+export ASE_GAUSSIAN_COMMAND='g16 < PREFIX.com > PREFIX.log'
+
+conda activate conda3.9
+
+MPIRUN='srun --cpu_bind=cores --mpi=pmi2 -n' # change it accordingly
+PROG='/home/x-smalviya/gaussian/g16.c01.zen2'
+
+sub_script=$(scontrol show job $SLURM_JOB_ID | gawk '/Command=/{split($1,sf,"="); print sf[2]}')
+asset_dir=$(dirname "$sub_script")
+source $asset_dir/util-slurm.sh
+
+((mpi = 1))
+((nprocperimage = nprocperjob / mpi))
+
+memory=$(scontrol show job $SLURM_JOBID | grep 'mem' | awk '{print $1}' | cut -d'=' -f4 | cut -d',' -f1 | sed 's/M//')
+
+REF_FILES='../parameters/ref_files.txt'
+file1=$(head -n 1 $REF_FILES)
+file2=$(head -n 2 $REF_FILES | tail -n 1)
+
+$MPIRUN $mpi -c $nprocperimage ./qmmm_ONIOM_code.py -fstrc *.pdb -reff1 $file1 -reff2 $file2 -tol1 0.08 -tol2 0.05 -gl1 gaussian1 -gl2 gaussian2 -xyz_fl1 traj1_opt.xyz -xyz_fl2 traj2_opt.xyz -d ./ -fl1 stdout1.log -fl2 stdout2.log -ftr1 stdout1.traj -ftr2 stdout2.traj -mem $memory -nproc $nprocperimage
