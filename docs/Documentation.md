@@ -1,6 +1,6 @@
 # Code Descriptions
 
-## 1. `gaussian_ONIOM_calculator.py` (present in `modules`)
+## 1. `gaussian_ONIOM_calculator.py` (present in [`modules`](https://github.com/2253shubham/Gaussian_ONIOM_plus_ASE_for_QMMM/tree/main/modules))
 This is a derived class of the ASE Gaussian calculator that facilitates interfacing Gaussian ONIOM input and output files with ASE. 
 
 ### Key Features:
