@@ -24,7 +24,7 @@ Currently Gaussian inbuilt transition state (TS) search methods are very finicky
 
 You may need to have an installed Gaussian software or if not, install Gaussian (version - g16) in your local system (or where you plan to ruin this code). Following which, the required environment variables can be set by the followiong lines:
 ```bash
-module spider gaussian      # list installed LAMMPS versions
+module spider gaussian      # list installed Gaussian versions
 module load gaussian        # load default version
 ```
 
