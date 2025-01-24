@@ -11,7 +11,7 @@ Currently Gaussian inbuilt transition state (TS) search methods are very finicky
 
 ## Documentation
 
-[Documentation](https://github.com/2253shubham/Gaussian_ONIOM_plus_ASE_for_QMMM/blob/main/docs/documentation.md)
+[Documentation](https://github.com/2253shubham/Gaussian_ONIOM_plus_ASE_for_QMMM/blob/main/docs/Documentation.md)
 
 
 
